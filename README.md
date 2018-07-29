@@ -1,5 +1,5 @@
 ## 瀑布流新闻页
-  预览地址：https://a379351939.github.io/waterfall-sinanews/
+  预览地址：https://a379351939.github.io/waterfall-sinanews/index.html
 
 ## 懒加载原理
   添加一个事件监听元素是否到达可视窗口。当到达用户窗口时将需要展示的元素展示。
