@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>waterfall-sinanew</title>
+  <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+  <style>
+      /*reset*/
+    * {margin: 0; padding: 0; box-sizing: border-box;}
+
+    a {
+      text-decoration: none;
+      color: #000;
+    }
+
+    ul {
+      list-style: none;
+    }
+    /*common*/
+    main {
+      margin: 0 20px;
+    }
+
+    .ele {
+      width: 280px;
+      position: absolute;
+      margin: 10px;
+      border:1px solid #ccc;
+      padding: 10px;
+      transition: all 1s;
+    }
+
+    .ele img {
+      width: 260px;
+    }
+  
+    .ele h4 {
+      border-bottom: 1px solid #ccc;
+      margin-top: 5px;
+      padding-bottom: 3px;
+
+    }
+    
+    .ele p {
+      margin-top: 5px;
+      font-size: 14px;
+      color: #777371;
+    }
+
+    .hide {
+      display: none;
+    }
+
+    #load {
+      height: 20px;
+      visibility: hidden;
+    }
+
+    .ct {
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <ul class="ct clearfix">
+<!--       <li class="ele">
+        <a href="#">
+          <img src="http://n.sinaimg.cn/tech/transform/200/w600h400/20180727/h4Vd-fzrwiaz9569063.jpg">
+          <h4>牛椋鸟被长颈鹿“口水”喷一身</h4>
+          <p>一头长颈鹿为一只牛椋鸟送上了一场“淋浴”体验。</p>
+        </a>
+      </li> -->
+      <li class="ele hide"></li>
+    </ul>
+    <div id="load">line</div>
+  </main>
+  <script>
+    var curpage = 1
+    var timer
+    var $ct = $('.ct')
+    var isLoading = false
+     var colCount = Math.floor($('.ct').width()/$('.ele').outerWidth(true))
+     var colHeightArray = []
+     for(var i=0; i<colCount; i++){ colHeightArray.push(0) }
+
+
+    function getData(callback){
+      if(isLoading) return
+      isLoading = true
+      $.ajax({
+        url:'http://platform.sina.com.cn/slide/album_tech',
+        type:'get',
+        data:{
+          app_key: '1271687855',
+          num: 10,
+          page: curpage
+        },
+        dataType:'jsonp',
+        jsonp:'jsoncallback'
+      }).done(function(ret){
+        callback(ret)
+        curpage += 1
+      }).fail(function(){
+        console.log('数据错误')
+      }).always(function(){
+        isLoading = false
+      })
+    }
+
+
+    function createNode(item){
+      var tpl = ''
+      tpl += '<li class="ele">'
+      tpl += '<a href="' + item.url + '">'
+      tpl += '<img src="' + item.img_url +'">'
+      tpl += '<h4>' + item.name + '</h4>'
+      tpl += '<p>' + item.short_intro + '</p>'
+      tpl += '</a>'
+      tpl += '</li>'
+
+      return $(tpl)
+    }
+
+    function render(data){
+      data.data.forEach(function(item){
+        $ct.append(createNode(item))
+      })
+      waterfall.init()
+    }
+
+    function start(){
+      getData(function(data){
+        render(data)
+      })
+    }
+
+    function isBottom(callback){      
+      if(timer){clearTimeout(timer)}
+      timer = setTimeout(function(){
+        if( $(document).height() - 100 <= $(window).scrollTop() + $(window).height() ) { 
+          callback()
+        }
+      }, 300)
+    }
+
+    function isShow($ele) {
+      return $ele.offset().top <= $(window).scrollTop() + $(window).height()
+    }
+    
+
+    start()
+
+    $(window).on('scroll', function(){
+      if(isShow($('#load'))) {
+        start()
+      }
+
+    })
+
+
+
+    function isShow($ele) {
+      return $ele.offset().top <= $(window).scrollTop() + $(window).height()
+    }
+
+
+
+    // 瀑布流
+    var waterfall = {
+     init: function(){
+       this.$width = $('.ele').outerWidth(true)
+       this.$cur = $('.ele')
+       this.$img = $('.ele img')
+       this.timer = null
+       this.bind()
+     },
+     bind: function(){
+       _this = this
+       this.$img.on('load', function(){
+         _this.layout($(this).parents('.ele'))
+
+       })
+       $(window).on('resize', function(){
+          colCount = Math.floor($('.ct').width()/$('.ele').outerWidth(true))
+          colHeightArray = []
+          for(var i=0; i<colCount; i++){ colHeightArray.push(0) }
+         _this.throttle(function(){
+           _this.$cur.not('.hide').each(function(){
+             _this.layout($(this))
+           })            
+         },200)
+       })
+     },
+
+     throttle: function(callback, time) {
+         if(_this.timer) {clearTimeout(_this.timer)}
+         _this.timer = setTimeout(function(){
+           callback()
+         },time)       
+     },
+     layout: function($cur){
+       _this = this
+
+       var minValue = colHeightArray[0]
+       var minIndex = 0
+
+       for(var i=0;i<colCount;i++){ 
+         if(colHeightArray[i] < minValue){
+           minValue = colHeightArray[i]
+           minIndex = i
+         }
+       } 
+
+       $cur.css({
+         "left": minIndex*_this.$width,
+         "top": minValue,
+         "opacity": 1
+       })
+
+       colHeightArray[minIndex] += $cur.outerHeight(true)
+       $('.ct').height(Math.max.apply(null,colHeightArray))
+     }
+    }
+
+
+
+  </script>
+</body>
+</html>
